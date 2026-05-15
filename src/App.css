@@ -1,38 +1,127 @@
-.App {
-  text-align: center;
+@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+body {
+  background-color: #1a1c23; /* Темный фон космоса/станции */
+  color: #e0e0e0;
+  font-family: 'VT323', monospace;
+  margin: 0;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.app-container {
+  width: 100%;
+  max-width: 900px;
   display: flex;
   flex-direction: column;
+  gap: 15px;
+}
+
+/* Пиксельная панель инструментов */
+.toolbar {
+  background: #2b2e3a;
+  border: 4px solid #4a4e69;
+  padding: 10px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  box-shadow: 4px 4px 0px #000; /* 8-битная тень */
+}
+
+button, select {
+  background: #4a4e69;
+  color: #fff;
+  border: 2px solid #9a8c98;
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+  padding: 5px 10px;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+button:hover, select:hover {
+  background: #9a8c98;
+  color: #22223b;
+}
+
+.btn-copy {
+  background: #4caf50;
+  border-color: #81c784;
+  margin-left: auto;
+}
+
+/* Лист бумаги А4 */
+.paper-container {
+  display: flex;
+  justify-content: center;
+  padding: 20px 0;
+}
+
+.paper {
+  background: #f4f1ea; /* Цвет старой бумаги */
+  color: #111;
+  width: 210mm; /* Пропорции А4 */
+  min-height: 297mm;
+  padding: 40px;
+  font-family: 'Arial', sans-serif; /* На самой бумаге текст читаемый */
+  font-size: 16px;
+  border: 4px solid #000;
+  box-shadow: 8px 8px 0px rgba(0,0,0,0.5);
+  outline: none;
+}
+
+/* Подвал со счетчиком */
+.footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 20px;
+  color: #81c784;
+}
+.warning { color: #f44336; }
+
+/* 1. Объединяем общие стили для кнопок, селекта и нашей кнопки цвета */
+button, select, .color-picker-wrapper {
+  background: #4a4e69;
+  color: #fff;
+  border: 2px solid #9a8c98;
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+  padding: 5px 10px;
+  cursor: pointer;
+  text-transform: uppercase;
+  box-sizing: border-box; /* Чтобы рамки не ломали размеры */
+  height: 35px; /* Задаем всем элементам тулбара единую высоту */
+}
+
+/* 2. Добавляем ховер для всех сразу */
+button:hover, select:hover, .color-picker-wrapper:hover {
+  background: #9a8c98;
+  color: #22223b;
+}
+
+/* 3. Специфичные стили только для кнопки цвета (без жестких размеров) */
+.color-picker-wrapper {
+  position: relative;
+  display: flex;
   align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  padding: 5px 12px; /* Чуть пошире, чтобы буква смотрелась хорошо */
 }
 
-.App-link {
-  color: #61dafb;
+.color-picker-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0; /* Инпут невидим, но кликабелен */
+  cursor: pointer;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.color-picker-icon {
+  font-weight: bold;
+  border-bottom: 4px solid;
+  line-height: 0.8; /* Поджимаем цветную полоску поближе к букве */
+  color: inherit; /* При ховере цвет буквы поменяется вместе с оберткой */
 }
