@@ -1,24 +1,86 @@
 @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 
-body {
-  background-color: #1a1c23; /* Темный фон космоса/станции */
-  color: #e0e0e0;
-  font-family: 'VT323', monospace;
+/* Общая разметка, чтобы футер всегда был внизу экрана */
+html, body, #root {
+  height: 100%;
   margin: 0;
-  padding: 20px;
-  display: flex;
-  justify-content: center;
+  padding: 0;
+  background-color: #1a1c23;
 }
 
-.app-container {
-  width: 100%;
-  max-width: 900px;
+.main-layout {
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
+  font-family: 'VT323', monospace;
+  color: #e0e0e0;
+}
+
+/* --- СТИЛИ ХЕДЕРА --- */
+.app-header {
+  background: #2b2e3a;
+  border-bottom: 4px solid #4a4e69;
+  padding: 10px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 0px #000;
+  z-index: 10;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
   gap: 15px;
 }
 
-/* Пиксельная панель инструментов */
+.app-logo {
+  height: 40px;
+  width: auto;
+  /* Важно для пиксель-арта, чтобы картинка не размывалась */
+  image-rendering: pixelated;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.brand-company {
+  font-size: 24px;
+  color: #81c784;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.brand-product {
+  font-size: 18px;
+  color: #ffffff;
+}
+
+.station-tag {
+  background: #16181d;
+  border: 2px solid #4a4e69;
+  padding: 3px 10px;
+  font-size: 16px;
+  color: #9a8c98;
+}
+
+/* --- ОСНОВНОЙ КОНТЕЙНЕР --- */
+.app-container {
+  flex: 1; /* Растягивается и занимает всё свободное место */
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  box-sizing: border-box;
+}
+
+/* Тулбар */
 .toolbar {
   background: #2b2e3a;
   border: 4px solid #4a4e69;
@@ -26,10 +88,10 @@ body {
   display: flex;
   gap: 10px;
   align-items: center;
-  box-shadow: 4px 4px 0px #000; /* 8-битная тень */
+  box-shadow: 4px 4px 0px #000;
 }
 
-button, select {
+button, select, .color-picker-wrapper {
   background: #4a4e69;
   color: #fff;
   border: 2px solid #9a8c98;
@@ -38,9 +100,11 @@ button, select {
   padding: 5px 10px;
   cursor: pointer;
   text-transform: uppercase;
+  box-sizing: border-box;
+  height: 35px;
 }
 
-button:hover, select:hover {
+button:hover, select:hover, .color-picker-wrapper:hover {
   background: #9a8c98;
   color: #22223b;
 }
@@ -51,62 +115,13 @@ button:hover, select:hover {
   margin-left: auto;
 }
 
-/* Лист бумаги А4 */
-.paper-container {
-  display: flex;
-  justify-content: center;
-  padding: 20px 0;
-}
-
-.paper {
-  background: #f4f1ea; /* Цвет старой бумаги */
-  color: #111;
-  width: 210mm; /* Пропорции А4 */
-  min-height: 297mm;
-  padding: 40px;
-  font-family: 'Arial', sans-serif; /* На самой бумаге текст читаемый */
-  font-size: 16px;
-  border: 4px solid #000;
-  box-shadow: 8px 8px 0px rgba(0,0,0,0.5);
-  outline: none;
-}
-
-/* Подвал со счетчиком */
-.footer {
-  display: flex;
-  justify-content: space-between;
-  font-size: 20px;
-  color: #81c784;
-}
-.warning { color: #f44336; }
-
-/* 1. Объединяем общие стили для кнопок, селекта и нашей кнопки цвета */
-button, select, .color-picker-wrapper {
-  background: #4a4e69;
-  color: #fff;
-  border: 2px solid #9a8c98;
-  font-family: 'VT323', monospace;
-  font-size: 18px;
-  padding: 5px 10px;
-  cursor: pointer;
-  text-transform: uppercase;
-  box-sizing: border-box; /* Чтобы рамки не ломали размеры */
-  height: 35px; /* Задаем всем элементам тулбара единую высоту */
-}
-
-/* 2. Добавляем ховер для всех сразу */
-button:hover, select:hover, .color-picker-wrapper:hover {
-  background: #9a8c98;
-  color: #22223b;
-}
-
-/* 3. Специфичные стили только для кнопки цвета (без жестких размеров) */
+/* Цвет текста */
 .color-picker-wrapper {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 5px 12px; /* Чуть пошире, чтобы буква смотрелась хорошо */
+  padding: 5px 12px;
 }
 
 .color-picker-input {
@@ -115,13 +130,82 @@ button:hover, select:hover, .color-picker-wrapper:hover {
   left: 0;
   width: 100%;
   height: 100%;
-  opacity: 0; /* Инпут невидим, но кликабелен */
+  opacity: 0;
   cursor: pointer;
 }
 
 .color-picker-icon {
   font-weight: bold;
   border-bottom: 4px solid;
-  line-height: 0.8; /* Поджимаем цветную полоску поближе к букве */
-  color: inherit; /* При ховере цвет буквы поменяется вместе с оберткой */
+  line-height: 0.8;
+  color: inherit;
+}
+
+/* Бумага */
+.paper-container {
+  display: flex;
+  justify-content: center;
+  padding: 10px 0;
+}
+
+.paper {
+  background: #f4f1ea;
+  color: #111;
+  width: 210mm;
+  min-height: 297mm;
+  padding: 40px;
+  font-family: 'Arial', sans-serif;
+  font-size: 16px;
+  border: 4px solid #000;
+  box-shadow: 8px 8px 0px rgba(0,0,0,0.5);
+  outline: none;
+  box-sizing: border-box;
+}
+
+/* --- СТИЛИ ФУТЕРА --- */
+.app-footer {
+  background: #2b2e3a;
+  border-top: 4px solid #4a4e69;
+  padding: 8px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 18px;
+  box-shadow: 0 -4px 0px #000;
+}
+
+.footer-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-green {
+  color: #81c784;
+}
+
+.warning {
+  color: #f44336;
+  animation: pulse 1s infinite alternate;
+}
+
+/* Мигающая точка в духе старых радаров */
+.blink-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #81c784;
+  border-radius: 50%;
+  display: inline-block;
+  animation: blink 1.5s infinite;
+}
+
+@keyframes blink {
+  0% { opacity: 0.2; }
+  50% { opacity: 1; }
+  100% { opacity: 0.2; }
+}
+
+@keyframes pulse {
+  0% { opacity: 0.7; }
+  100% { opacity: 1; }
 }
