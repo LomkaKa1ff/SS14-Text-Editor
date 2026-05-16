@@ -209,3 +209,35 @@ button:hover, select:hover, .color-picker-wrapper:hover {
   0% { opacity: 0.7; }
   100% { opacity: 1; }
 }
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 15px; /* Задает расстояние между кнопкой языка и плашкой версии */
+}
+
+.station-tag {
+  background: #16181d;
+  border: 2px solid #4a4e69;
+  padding: 3px 10px;
+  font-size: 16px;
+  color: #9a8c98;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+/* Стили специально для переключателя языка (чтобы он был как кнопка, но выпадал как селект) */
+.lang-select {
+  cursor: pointer;
+  font-family: 'VT323', monospace;
+  outline: none;
+  text-align: center;
+  padding: 0 5px;
+}
+
+.lang-select:hover {
+  background: #4a4e69;
+  color: #fff;
+}
