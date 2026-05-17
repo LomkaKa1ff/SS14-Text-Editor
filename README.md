@@ -10,6 +10,7 @@ A fast web-based WYSIWYG text editor designed specifically for Space Station 14.
 * **100% Engine Compatible:** Supports bold, italic, underline, custom colors, monospace font (`[mono]`), bullet lists (`[bullet]`), and headers (`[head=1]`, `[head=2]`, `[head=3]`).
 * **Autosave:** Your 4000-character report won't be lost if you accidentally close the tab.
 * **Built-in Templates:** Quick presets for Interrogation Forms and Medical Reports.
+* **Import Feature** You can import your old report without problem
 * **Bilingual:** UI supports both English and Russian.
 
 Inspired by this work: https://github.com/crazy1112345/RMC14Paperwork
