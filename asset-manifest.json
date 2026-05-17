@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/LomkaKa1ff/SS14-Text-Editor.git/static/css/main.a345bce0.css",
+    "main.js": "/LomkaKa1ff/SS14-Text-Editor.git/static/js/main.c8be5ccf.js",
+    "static/js/453.116a9308.chunk.js": "/LomkaKa1ff/SS14-Text-Editor.git/static/js/453.116a9308.chunk.js",
+    "index.html": "/LomkaKa1ff/SS14-Text-Editor.git/index.html",
+    "main.a345bce0.css.map": "/LomkaKa1ff/SS14-Text-Editor.git/static/css/main.a345bce0.css.map",
+    "main.c8be5ccf.js.map": "/LomkaKa1ff/SS14-Text-Editor.git/static/js/main.c8be5ccf.js.map",
+    "453.116a9308.chunk.js.map": "/LomkaKa1ff/SS14-Text-Editor.git/static/js/453.116a9308.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.a345bce0.css",
+    "static/js/main.c8be5ccf.js"
+  ]
+}
