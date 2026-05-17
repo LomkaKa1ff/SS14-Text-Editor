@@ -1,22 +1,29 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 
-// Словарь локализации
 const TRANSLATIONS = {
   ru: {
     placeholder: "Начни писать свой отчет здесь...",
     bold: "Жирный",
     italic: "Курсив",
     underline: "Подчеркнутый",
-    colorTitle: "Цвет текста",
-    templates: "Шаблоны...",
-    empty: "Чистый лист",
-    interrogation: "Бланк допроса (СБ)",
-    medical: "Мед. заключение (Медбай)",
-    copyBtn: "📋 СКОПИРОВАТЬ КОД",
-    alertCopy: "Код для SS14 скопирован в буфер обмена!",
+    colorTitle: "Цвет",
+    monoTitle: "Моноширинный шрифт (Mono)",
+    listTitle: "Список",
+    formatTitle: "Формат",
+    normalText: "Текст",
+    heading1: "Заг. 1",
+    heading2: "Заг. 2",
+    heading3: "Заг. 3",
+    templates: "Шаблоны",
+    empty: "Пустой",
+    interrogation: "Допрос (СБ)",
+    medical: "Мед. карта",
+    copyBtn: "📋 КОПИРОВАТЬ",
+    alertCopy: "КОД УСПЕШНО СКОПИРОВАН В БУФЕР!",
     statusStable: "СВЯЗЬ С ЦК: СТАБИЛЬНА",
-    autosaveActive: "АВТОСОХРАНЕНИЕ: АКТИВНО",
+    autosaveLabel: "АВТОСОХРАНЕНИЕ:",
+    autosaveStatus: "АКТИВНО",
     chars: "СИМВОЛЫ",
     tplInterrogation: "<b>БЛАНК ДОПРОСА</b><br><br><b>Имя подозреваемого:</b><br><b>Должность:</b><br><b>Причина задержания:</b><br><br><b>Ход допроса:</b><br><br><i>Подпись офицера СБ:</i>",
     tplMedical: "<b>МЕДИЦИНСКОЕ ЗАКЛЮЧЕНИЕ</b><br><br><b>Пациент:</b><br><b>Диагноз:</b><br><b>Назначенное лечение:</b><br><br><i>Подпись Главного Врача:</i>",
@@ -26,15 +33,23 @@ const TRANSLATIONS = {
     bold: "Bold",
     italic: "Italic",
     underline: "Underline",
-    colorTitle: "Text Color",
-    templates: "Templates...",
-    empty: "Blank page",
-    interrogation: "Interrogation Form (Sec)",
-    medical: "Medical Report (Med)",
-    copyBtn: "📋 COPY CODE",
-    alertCopy: "SS14 code copied to clipboard!",
+    colorTitle: "Color",
+    monoTitle: "Monospace",
+    listTitle: "List",
+    formatTitle: "Format",
+    normalText: "Text",
+    heading1: "Head 1",
+    heading2: "Head 2",
+    heading3: "Head 3",
+    templates: "Templates",
+    empty: "Blank",
+    interrogation: "Interrogation",
+    medical: "Medical",
+    copyBtn: "📋 COPY",
+    alertCopy: "CODE SUCCESSFULLY COPIED TO CLIPBOARD!",
     statusStable: "CC CONNECTION: STABLE",
-    autosaveActive: "AUTOSAVE: ACTIVE",
+    autosaveLabel: "AUTOSAVE:",
+    autosaveStatus: "ACTIVE",
     chars: "CHARS",
     tplInterrogation: "<b>INTERROGATION FORM</b><br><br><b>Suspect Name:</b><br><b>Job Title:</b><br><b>Reason for Detention:</b><br><br><b>Interrogation Log:</b><br><br><i>Security Officer Signature:</i>",
     tplMedical: "<b>MEDICAL REPORT</b><br><br><b>Patient:</b><br><b>Diagnosis:</b><br><b>Prescribed Treatment:</b><br><br><i>Chief Medical Officer Signature:</i>",
@@ -46,12 +61,24 @@ function App() {
   const [charCount, setCharCount] = useState(0);
   const [textColor, setTextColor] = useState('#000000');
 
-  // Состояние языка (по умолчанию RU, либо берем из памяти)
-  const [lang, setLang] = useState(() => localStorage.getItem('ss14_paper_lang') || 'ru');
-  const t = TRANSLATIONS[lang]; // Текущий словарь
+  const [currentFormat, setCurrentFormat] = useState('p');
+
+  const [toastMessage, setToastMessage] = useState(null);
+  const [showClown, setShowClown] = useState(false);
+
+  // EN for default
+  const [lang, setLang] = useState(() => localStorage.getItem('ss14_paper_lang') || 'en');
+  const t = TRANSLATIONS[lang];
   const MAX_CHARS = 4000;
 
-  // Сохраняем язык при его изменении
+  useEffect(() => {
+    const clownInterval = setInterval(() => {
+      setShowClown(true);
+      setTimeout(() => setShowClown(false), 8000);
+    }, 60000);
+    return () => clearInterval(clownInterval);
+  }, []);
+
   useEffect(() => {
     localStorage.setItem('ss14_paper_lang', lang);
   }, [lang]);
@@ -64,7 +91,7 @@ function App() {
     } else if (editorRef.current) {
       editorRef.current.innerHTML = t.placeholder;
     }
-  }, [lang]); // Обновим плейсхолдер при смене языка, если лист пустой
+  }, [lang]);
 
   const formatText = (command, value = null) => {
     document.execCommand(command, false, value);
@@ -76,6 +103,19 @@ function App() {
     const newColor = e.target.value;
     setTextColor(newColor);
     formatText('foreColor', newColor);
+  };
+
+  const handleFormatBlock = (tag) => {
+    document.execCommand('formatBlock', false, tag);
+    setCurrentFormat(tag.toLowerCase());
+    editorRef.current.focus();
+    saveContent();
+  };
+
+  const formatMono = () => {
+    document.execCommand('fontName', false, 'monospace');
+    editorRef.current.focus();
+    saveContent();
   };
 
   const saveContent = () => {
@@ -91,6 +131,24 @@ function App() {
     }
   };
 
+  const handleSelectionChange = () => {
+    if (!editorRef.current) return;
+
+    let node = document.getSelection().anchorNode;
+    let format = 'p';
+    while (node && node !== editorRef.current) {
+      if (node.nodeType === 1) {
+        const tagName = node.tagName.toLowerCase();
+        if (['h1', 'h2', 'h3'].includes(tagName)) {
+          format = tagName;
+          break;
+        }
+      }
+      node = node.parentNode;
+    }
+    setCurrentFormat(format);
+  };
+
   const generateSS14Code = () => {
     if (!editorRef.current) return "";
     const tempDiv = document.createElement('div');
@@ -103,15 +161,21 @@ function App() {
     });
 
     let currentHtml = tempDiv.innerHTML;
-    const spanColorRegex = /<span[^>]+style=["'](?:[^"']*;\s*)?color:\s*([^;"']+)["'][^>]*>(.*?)<\/span>/gi;
 
+    const spanColorRegex = /<span[^>]+style=["'](?:[^"']*;\s*)?color:\s*([^;"']+)["'][^>]*>(.*?)<\/span>/gi;
     currentHtml = currentHtml.replace(spanColorRegex, (match, colorValue, content) => {
       let finalColor = colorValue.trim();
-      if (finalColor.startsWith('rgb')) {
-        finalColor = rgbToHex(finalColor);
-      }
+      if (finalColor.startsWith('rgb')) finalColor = rgbToHex(finalColor);
       return `[color=${finalColor}]${content}[/color]`;
     });
+
+    currentHtml = currentHtml.replace(/<font[^>]*face=["']?monospace["']?[^>]*>(.*?)<\/font>/gi, '[mono]$1[/mono]');
+    currentHtml = currentHtml.replace(/<span[^>]*style=["'][^"']*font-family:\s*monospace[^"']*["'][^>]*>(.*?)<\/span>/gi, '[mono]$1[/mono]');
+
+    currentHtml = currentHtml.replace(/<li[^>]*>(.*?)<\/li>/gi, '\n[bullet]$1[/bullet]');
+    currentHtml = currentHtml.replace(/<ul[^>]*>|<\/ul>/gi, '');
+
+    currentHtml = currentHtml.replace(/<h([1-3])[^>]*>(.*?)<\/h\1>/gi, '\n[head=$1]$2[/head]\n');
 
     tempDiv.innerHTML = currentHtml;
     let processedHtml = tempDiv.innerHTML;
@@ -127,6 +191,8 @@ function App() {
     processedHtml = processedHtml.replace(/<p>(.*?)<\/p>/gi, '\n$1');
     processedHtml = processedHtml.replace(/<br\s*[\/]?>/gi, '\n');
 
+    processedHtml = processedHtml.replace(/\n\s*\n\s*\n/g, '\n\n');
+
     const finalDiv = document.createElement('div');
     finalDiv.innerHTML = processedHtml;
     return finalDiv.textContent.trim();
@@ -138,52 +204,39 @@ function App() {
     return "#" + ((1 << 24) + (parseInt(rgb[0]) << 16) + (parseInt(rgb[1]) << 8) + parseInt(rgb[2])).toString(16).slice(1).toUpperCase();
   };
 
+  const showToast = (message) => {
+    setToastMessage(message);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
   const copyToClipboard = () => {
     const ss14Code = generateSS14Code();
     navigator.clipboard.writeText(ss14Code);
-    alert(t.alertCopy);
+    showToast(t.alertCopy);
   };
 
   const loadTemplate = (e) => {
     const templateKey = e.target.value;
     if (!templateKey || !editorRef.current) return;
-
-    if (templateKey === 'empty') {
-      editorRef.current.innerHTML = "";
-    } else if (templateKey === 'interrogation') {
-      editorRef.current.innerHTML = t.tplInterrogation;
-    } else if (templateKey === 'medical') {
-      editorRef.current.innerHTML = t.tplMedical;
-    }
-
+    if (templateKey === 'empty') editorRef.current.innerHTML = "";
+    else if (templateKey === 'interrogation') editorRef.current.innerHTML = t.tplInterrogation;
+    else if (templateKey === 'medical') editorRef.current.innerHTML = t.tplMedical;
     saveContent();
-    e.target.value = ""; // Сбрасываем селект после выбора
+    e.target.value = "";
   };
 
   return (
       <div className="main-layout">
-        {/* ХЕДЕР САЙТА */}
         <header className="app-header">
-          <div className="header-left">
-            <img
-                src="https://spacestation14.com/images/main/icon.png"
-                alt="SS14 Logo"
-                className="app-logo"
-            />
+          <a href="" className="header-left logo-link">
+            <img src="https://spacestation14.com/images/main/icon.png" alt="SS14 Logo" className="app-logo" />
             <div className="brand-text">
               <span className="brand-company">NANOTRASEN</span>
               <span className="brand-product">TEXT EDITOR</span>
             </div>
-          </div>
-
-          {/* ПРАВАЯ ЧАСТЬ ХЕДЕРА */}
+          </a>
           <div className="header-right">
-            {/* Кнопка смены языка */}
-            <select
-                className="station-tag lang-select"
-                value={lang}
-                onChange={(e) => setLang(e.target.value)}
-            >
+            <select className="station-tag lang-select" value={lang} onChange={(e) => setLang(e.target.value)}>
               <option value="ru">RU</option>
               <option value="en">EN</option>
             </select>
@@ -191,24 +244,33 @@ function App() {
           </div>
         </header>
 
-        {/* ОСНОВНОЙ КОНТЕНТ (РЕДАКТОР) */}
         <div className="app-container">
           <div className="toolbar">
             <button onClick={() => formatText('bold')} title={t.bold}><b>B</b></button>
             <button onClick={() => formatText('italic')} title={t.italic}><i>I</i></button>
             <button onClick={() => formatText('underline')} title={t.underline}><u>U</u></button>
 
+            <button onClick={formatMono} title={t.monoTitle}><span style={{fontFamily: 'monospace', fontWeight: 'bold'}}>M</span></button>
+            <button onClick={() => formatText('insertUnorderedList')} title={t.listTitle}>•</button>
+
             <div className="color-picker-wrapper" title={t.colorTitle}>
-              <input
-                  type="color"
-                  value={textColor}
-                  onChange={handleColorChange}
-                  className="color-picker-input"
-              />
+              <input type="color" value={textColor} onChange={handleColorChange} className="color-picker-input" />
               <span className="color-picker-icon" style={{borderBottomColor: textColor}}>A</span>
             </div>
 
-            <select onChange={loadTemplate} defaultValue="">
+            <select
+                className="format-select"
+                value={currentFormat}
+                onChange={(e) => handleFormatBlock(e.target.value)}
+                title={t.formatTitle}
+            >
+              <option value="p">{t.normalText}</option>
+              <option value="h1">{t.heading1}</option>
+              <option value="h2">{t.heading2}</option>
+              <option value="h3">{t.heading3}</option>
+            </select>
+
+            <select onChange={loadTemplate} defaultValue="" className="format-select">
               <option value="" disabled>{t.templates}</option>
               <option value="empty">{t.empty}</option>
               <option value="interrogation">{t.interrogation}</option>
@@ -225,22 +287,37 @@ function App() {
                 contentEditable="true"
                 onInput={saveContent}
                 onBlur={saveContent}
+                onMouseUp={handleSelectionChange}
+                onKeyUp={handleSelectionChange}
             ></div>
           </div>
         </div>
 
-        {/* ФУТЕР САЙТА */}
         <footer className="app-footer">
-          <div className="footer-item">
+          <div className="footer-item footer-left">
             <span className="blink-dot"></span> {t.statusStable}
           </div>
-          <div className="footer-item">
-            {t.autosaveActive}
+          <div className="footer-item footer-center">
+            {t.autosaveLabel} <span className="status-green" style={{ marginLeft: '5px' }}>{t.autosaveStatus}</span>
           </div>
-          <div className={`footer-item ${charCount > MAX_CHARS ? 'warning' : ''}`}>
+          <div className={`footer-item footer-right ${charCount > MAX_CHARS ? 'warning' : ''}`}>
             {t.chars}: {charCount} / {MAX_CHARS}
           </div>
         </footer>
+
+        {toastMessage && (
+            <div className="nt-toast">
+              <div className="nt-toast-icon">✓</div>
+              <div className="nt-toast-text">{toastMessage}</div>
+            </div>
+        )}
+
+        <div className={`clown-easter-egg ${showClown ? 'active' : ''}`}>
+          <img src="https://i.redd.it/6j0xclcoqs861.png" alt="Clown" className="clown-sprite" />
+          <div className="clown-speech-bubble">
+            For feedback write <b>komkalive</b> on Discord! Honk!
+          </div>
+        </div>
       </div>
   );
 }
