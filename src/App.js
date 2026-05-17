@@ -231,7 +231,7 @@ function App() {
           <a href="" className="header-left logo-link">
             <img src="https://spacestation14.com/images/main/icon.png" alt="SS14 Logo" className="app-logo" />
             <div className="brand-text">
-              <span className="brand-company">NANOTRASEN</span>
+              <span className="brand-company">PAPERWORK</span>
               <span className="brand-product">TEXT EDITOR</span>
             </div>
           </a>
@@ -240,7 +240,7 @@ function App() {
               <option value="ru">RU</option>
               <option value="en">EN</option>
             </select>
-            <div className="station-tag">NT-SYSTEM v1.4</div>
+            <div className="station-tag">NT-SYSTEM v1.1</div>
           </div>
         </header>
 
@@ -312,7 +312,7 @@ function App() {
             </div>
         )}
 
-        <div className={`clown-easter-egg ${showClown ? 'active' : ''}`}>
+        <div className={`clown-secret-message ${showClown ? 'active' : ''}`}>
           <img src="https://i.redd.it/6j0xclcoqs861.png" alt="Clown" className="clown-sprite" />
           <div className="clown-speech-bubble">
             For feedback write <b>komkalive</b> on Discord! Honk!
