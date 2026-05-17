@@ -1,6 +1,6 @@
 # SS14 Paperwork Text Editor
 
-Online web based paperwork editor: **https://lomkaka1ff.github.io/SS14-Text-Editor/
+Online web based paperwork editor: **https://lomkaka1ff.github.io/SS14-Text-Editor/**
 
 A fast web-based WYSIWYG text editor designed specifically for Space Station 14. Write your paperwork like you would in Google Docs, and the editor will automatically convert it into SS14-compatible markup code! No need to manually type `[color=red]` or `[head=1]` ever again.
 
