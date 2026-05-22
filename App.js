@@ -220,15 +220,18 @@ function App() {
     }
 
     let html = importInput.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    html = html.replace(/\[bold\](.*?)\[\/bold\]/gi, '<b>$1</b>');
-    html = html.replace(/\[italic\](.*?)\[\/italic\]/gi, '<i>$1</i>');
-    html = html.replace(/\[underline\](.*?)\[\/underline\]/gi, '<u>$1</u>');
-    html = html.replace(/\[color=(.*?)\](.*?)\[\/color\]/gi, '<span style="color: $1;">$2</span>');
-    html = html.replace(/\[mono\](.*?)\[\/mono\]/gi, '<span style="font-family: monospace;">$1</span>');
-    html = html.replace(/\[head=([1-3])\](.*?)\[\/head\]/gi, '<h$1>$2</h$1>');
 
-    html = html.replace(/\[bullet\](.*?)\[\/bullet\]/gi, '<li>$1</li>');
-    html = html.replace(/(<li>.*?<\/li>(\s*<li>.*?<\/li>)*)/gi, '<ul>$1</ul>');
+    html = html.replace(/\[bold\]([\s\S]*?)\[\/bold\]/gi, '<b>$1</b>');
+    html = html.replace(/\[italic\]([\s\S]*?)\[\/italic\]/gi, '<i>$1</i>');
+    html = html.replace(/\[underline\]([\s\S]*?)\[\/underline\]/gi, '<u>$1</u>');
+    html = html.replace(/\[color=(.*?)\]([\s\S]*?)\[\/color\]/gi, '<span style="color: $1;">$2</span>');
+    html = html.replace(/\[mono\]([\s\S]*?)\[\/mono\]/gi, '<span style="font-family: monospace;">$1</span>');
+    html = html.replace(/\[head=([1-3])\]([\s\S]*?)\[\/head\]/gi, '<h$1>$2</h$1>');
+
+    html = html.replace(/\[bullet\]([\s\S]*?)\[\/bullet\]/gi, '<li>$1</li>');
+    html = html.replace(/(<li>[\s\S]*?<\/li>(\s*<li>[\s\S]*?<\/li>)*)/gi, '<ul>$1</ul>');
+
+    html = html.replace(/\[\/?(bold|italic|underline|mono|bullet|color|head)[^\]]*\]/gi, '');
 
     html = html.replace(/\n/g, '<br>');
     html = html.replace(/<br>\s*<h/gi, '<h');
@@ -242,7 +245,6 @@ function App() {
       showToast(t.importSuccess);
     }
 
-    // Closing window
     setShowImportModal(false);
     setImportInput("");
   };
