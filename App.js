@@ -165,50 +165,52 @@ function App() {
 
   const generateSS14Code = () => {
     if (!editorRef.current) return "";
+
+    // Coping editor stuff
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = editorRef.current.innerHTML;
 
-    const fontElements = tempDiv.querySelectorAll('font[color]');
-    fontElements.forEach(el => {
-      const color = el.getAttribute('color');
-      el.outerHTML = `[color=${color}]${el.innerHTML}[/color]`;
+    // 1. Converting colors
+    tempDiv.querySelectorAll('font[color]').forEach(el => {
+      el.outerHTML = `[color=${el.getAttribute('color')}]${el.innerHTML}[/color]`;
     });
 
     let currentHtml = tempDiv.innerHTML;
 
-    const spanColorRegex = /<span[^>]+style=["'](?:[^"']*;\s*)?color:\s*([^;"']+)["'][^>]*>(.*?)<\/span>/gi;
-    currentHtml = currentHtml.replace(spanColorRegex, (match, colorValue, content) => {
-      let finalColor = colorValue.trim();
-      if (finalColor.startsWith('rgb')) finalColor = rgbToHex(finalColor);
-      return `[color=${finalColor}]${content}[/color]`;
-    });
+    // Converting span-styles (colors and mono)
+    currentHtml = currentHtml.replace(/<span[^>]+style=["'](?:[^"']*;\s*)?color:\s*([^;"']+)["'][^>]*>(.*?)<\/span>/gi, (m, color, content) =>
+        `[color=${color.startsWith('rgb') ? rgbToHex(color) : color}]${content}[/color]`);
 
-    currentHtml = currentHtml.replace(/<font[^>]*face=["']?monospace["']?[^>]*>(.*?)<\/font>/gi, '[mono]$1[/mono]');
     currentHtml = currentHtml.replace(/<span[^>]*style=["'][^"']*font-family:\s*monospace[^"']*["'][^>]*>(.*?)<\/span>/gi, '[mono]$1[/mono]');
+    currentHtml = currentHtml.replace(/<font[^>]*face=["']?monospace["']?[^>]*>(.*?)<\/font>/gi, '[mono]$1[/mono]');
 
+    // 2. Lists and heads
     currentHtml = currentHtml.replace(/<li[^>]*>(.*?)<\/li>/gi, '\n[bullet]$1[/bullet]');
     currentHtml = currentHtml.replace(/<ul[^>]*>|<\/ul>/gi, '');
-
     currentHtml = currentHtml.replace(/<h([1-3])[^>]*>(.*?)<\/h\1>/gi, '\n[head=$1]$2[/head]\n');
 
-    tempDiv.innerHTML = currentHtml;
-    let processedHtml = tempDiv.innerHTML;
+    // 3. Formating text
+    currentHtml = currentHtml
+        .replace(/<(b|strong)>(.*?)<\/\1>/gi, '[bold]$2[/bold]')
+        .replace(/<(i|em)>(.*?)<\/\2>/gi, '[italic]$2[/italic]')
+        .replace(/<u>(.*?)<\/u>/gi, '[underline]$1[/underline]');
 
-    processedHtml = processedHtml.replace(/<b>(.*?)<\/b>/gi, '[bold]$1[/bold]');
-    processedHtml = processedHtml.replace(/<strong>(.*?)<\/strong>/gi, '[bold]$1[/bold]');
-    processedHtml = processedHtml.replace(/<i>(.*?)<\/i>/gi, '[italic]$1[/italic]');
-    processedHtml = processedHtml.replace(/<em>(.*?)<\/em>/gi, '[italic]$1[/italic]');
-    processedHtml = processedHtml.replace(/<u>(.*?)<\/u>/gi, '[underline]$1[/underline]');
+    // 4. Finding tags, that has between them nothing
+    currentHtml = currentHtml.replace(/\[(bold|italic|underline)\]\s*\[\/\1\]/gi, '');
 
-    processedHtml = processedHtml.replace(/<div><br><\/div>/gi, '\n');
-    processedHtml = processedHtml.replace(/<div>(.*?)<\/div>/gi, '\n$1');
-    processedHtml = processedHtml.replace(/<p>(.*?)<\/p>/gi, '\n$1');
-    processedHtml = processedHtml.replace(/<br\s*[\/]?>/gi, '\n');
+    // 5. Moving and final clearing
+    currentHtml = currentHtml
+        .replace(/<div><br><\/div>/gi, '\n')
+        .replace(/<div>(.*?)<\/div>/gi, '\n$1')
+        .replace(/<p>(.*?)<\/p>/gi, '\n$1')
+        .replace(/<br\s*[\/]?>/gi, '\n');
 
-    processedHtml = processedHtml.replace(/\n\s*\n\s*\n/g, '\n\n');
+    // Deleting triple lines
+    currentHtml = currentHtml.replace(/\n\s*\n\s*\n/g, '\n\n');
 
+    // Final text
     const finalDiv = document.createElement('div');
-    finalDiv.innerHTML = processedHtml;
+    finalDiv.innerHTML = currentHtml;
     return finalDiv.textContent.trim();
   };
 
