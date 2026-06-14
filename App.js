@@ -105,7 +105,7 @@ function App() {
     } else if (editorRef.current) {
       editorRef.current.innerHTML = t.placeholder;
     }
-  }, [lang]);
+  }, [lang, t.placeholder]);
 
   const formatText = (command, value = null) => {
     document.execCommand(command, false, value);
@@ -166,7 +166,6 @@ function App() {
   const generateSS14Code = () => {
     if (!editorRef.current) return "";
 
-    // Coping editor stuff
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = editorRef.current.innerHTML;
 
@@ -208,20 +207,13 @@ function App() {
     // Deleting triple lines
     currentHtml = currentHtml.replace(/\n\s*\n\s*\n/g, '\n\n');
 
-    // Final text
     const finalDiv = document.createElement('div');
     finalDiv.innerHTML = currentHtml;
     return finalDiv.textContent.trim();
   };
-
-  // Custom import window
-  const handleImportSubmit = () => {
-    if (!importInput.trim()) {
-      setShowImportModal(false);
-      return;
-    }
-
-    let html = importInput.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  
+  const parseSS14ToHTML = (rawText) => {
+    let html = rawText.replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
     html = html.replace(/\[bold\]([\s\S]*?)\[\/bold\]/gi, '<b>$1</b>');
     html = html.replace(/\[italic\]([\s\S]*?)\[\/italic\]/gi, '<i>$1</i>');
@@ -240,6 +232,37 @@ function App() {
     html = html.replace(/<\/h([1-3])>\s*<br>/gi, '</h$1>');
     html = html.replace(/<br>\s*<ul/gi, '<ul');
     html = html.replace(/<\/ul>\s*<br>/gi, '</ul>');
+
+    return html;
+  };
+
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const pastedText = (e.clipboardData || window.clipboardData).getData('text/plain');
+
+    const hasSS14Tags = /\[\/?(bold|italic|underline|color|mono|bullet|head)[^\]]*\]/i.test(pastedText);
+
+    if (hasSS14Tags) {
+      const formattedHTML = parseSS14ToHTML(pastedText);
+      document.execCommand('insertHTML', false, formattedHTML);
+    } else {
+      const plainHtml = pastedText
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/\n/g, '<br>');
+      document.execCommand('insertHTML', false, plainHtml);
+    }
+    saveContent();
+  };
+
+  // Custom import window
+  const handleImportSubmit = () => {
+    if (!importInput.trim()) {
+      setShowImportModal(false);
+      return;
+    }
+
+    const html = parseSS14ToHTML(importInput);
 
     if (editorRef.current) {
       editorRef.current.innerHTML = html;
@@ -286,7 +309,7 @@ function App() {
   return (
       <div className="main-layout">
         <header className="app-header">
-          <a href="" className="header-left logo-link">
+          <a href="/" className="header-left logo-link">
             <img src="https://spacestation14.com/images/main/icon.png" alt="SS14 Logo" className="app-logo" />
             <div className="brand-text">
               <span className="brand-company">PAPERWORK</span>
@@ -350,6 +373,7 @@ function App() {
                 onBlur={saveContent}
                 onMouseUp={handleSelectionChange}
                 onKeyUp={handleSelectionChange}
+                onPaste={handlePaste}
             ></div>
           </div>
         </div>
