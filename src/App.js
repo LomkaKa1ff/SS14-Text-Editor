@@ -19,6 +19,12 @@ const TRANSLATIONS = {
     empty: "Пустой",
     interrogation: "Допрос (СБ)",
     medical: "Мед. карта",
+    importBtn: "📥 ИМПОРТ",
+    importTitle: "ВСТАВЬТЕ ВАШ КОД",
+    importPrompt: "Вставьте скопированный код SS14 ниже:",
+    importCancel: "ОТМЕНА",
+    importSubmit: "ЗАГРУЗИТЬ",
+    importSuccess: "КОД УСПЕШНО ИМПОРТИРОВАН!",
     copyBtn: "📋 КОПИРОВАТЬ",
     alertCopy: "КОД УСПЕШНО СКОПИРОВАН В БУФЕР!",
     statusStable: "СВЯЗЬ С ЦК: СТАБИЛЬНА",
@@ -45,6 +51,12 @@ const TRANSLATIONS = {
     empty: "Blank",
     interrogation: "Interrogation",
     medical: "Medical",
+    importBtn: "📥 IMPORT",
+    importTitle: "IMPORT YOUR CODE",
+    importPrompt: "Paste your SS14 code below:",
+    importCancel: "CANCEL",
+    importSubmit: "LOAD",
+    importSuccess: "CODE SUCCESSFULLY IMPORTED!",
     copyBtn: "📋 COPY",
     alertCopy: "CODE SUCCESSFULLY COPIED TO CLIPBOARD!",
     statusStable: "CC CONNECTION: STABLE",
@@ -60,13 +72,15 @@ function App() {
   const editorRef = useRef(null);
   const [charCount, setCharCount] = useState(0);
   const [textColor, setTextColor] = useState('#000000');
-
   const [currentFormat, setCurrentFormat] = useState('p');
+
+  // Custom modal
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importInput, setImportInput] = useState("");
 
   const [toastMessage, setToastMessage] = useState(null);
   const [showClown, setShowClown] = useState(false);
 
-  // EN for default
   const [lang, setLang] = useState(() => localStorage.getItem('ss14_paper_lang') || 'en');
   const t = TRANSLATIONS[lang];
   const MAX_CHARS = 4000;
@@ -91,7 +105,7 @@ function App() {
     } else if (editorRef.current) {
       editorRef.current.innerHTML = t.placeholder;
     }
-  }, [lang]);
+  }, [lang, t.placeholder]);
 
   const formatText = (command, value = null) => {
     document.execCommand(command, false, value);
@@ -151,51 +165,118 @@ function App() {
 
   const generateSS14Code = () => {
     if (!editorRef.current) return "";
+
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = editorRef.current.innerHTML;
 
-    const fontElements = tempDiv.querySelectorAll('font[color]');
-    fontElements.forEach(el => {
-      const color = el.getAttribute('color');
-      el.outerHTML = `[color=${color}]${el.innerHTML}[/color]`;
+    // 1. Converting colors
+    tempDiv.querySelectorAll('font[color]').forEach(el => {
+      el.outerHTML = `[color=${el.getAttribute('color')}]${el.innerHTML}[/color]`;
     });
 
     let currentHtml = tempDiv.innerHTML;
 
-    const spanColorRegex = /<span[^>]+style=["'](?:[^"']*;\s*)?color:\s*([^;"']+)["'][^>]*>(.*?)<\/span>/gi;
-    currentHtml = currentHtml.replace(spanColorRegex, (match, colorValue, content) => {
-      let finalColor = colorValue.trim();
-      if (finalColor.startsWith('rgb')) finalColor = rgbToHex(finalColor);
-      return `[color=${finalColor}]${content}[/color]`;
-    });
+    // Converting span-styles (colors and mono)
+    currentHtml = currentHtml.replace(/<span[^>]+style=["'](?:[^"']*;\s*)?color:\s*([^;"']+)["'][^>]*>(.*?)<\/span>/gi, (m, color, content) =>
+        `[color=${color.startsWith('rgb') ? rgbToHex(color) : color}]${content}[/color]`);
 
-    currentHtml = currentHtml.replace(/<font[^>]*face=["']?monospace["']?[^>]*>(.*?)<\/font>/gi, '[mono]$1[/mono]');
     currentHtml = currentHtml.replace(/<span[^>]*style=["'][^"']*font-family:\s*monospace[^"']*["'][^>]*>(.*?)<\/span>/gi, '[mono]$1[/mono]');
+    currentHtml = currentHtml.replace(/<font[^>]*face=["']?monospace["']?[^>]*>(.*?)<\/font>/gi, '[mono]$1[/mono]');
 
+    // 2. Lists and heads
     currentHtml = currentHtml.replace(/<li[^>]*>(.*?)<\/li>/gi, '\n[bullet]$1[/bullet]');
     currentHtml = currentHtml.replace(/<ul[^>]*>|<\/ul>/gi, '');
-
     currentHtml = currentHtml.replace(/<h([1-3])[^>]*>(.*?)<\/h\1>/gi, '\n[head=$1]$2[/head]\n');
 
-    tempDiv.innerHTML = currentHtml;
-    let processedHtml = tempDiv.innerHTML;
+    // 3. Formating text
+    currentHtml = currentHtml
+        .replace(/<(b|strong)>(.*?)<\/\1>/gi, '[bold]$2[/bold]')
+        .replace(/<(i|em)>(.*?)<\/\2>/gi, '[italic]$2[/italic]')
+        .replace(/<u>(.*?)<\/u>/gi, '[underline]$1[/underline]');
 
-    processedHtml = processedHtml.replace(/<b>(.*?)<\/b>/gi, '[bold]$1[/bold]');
-    processedHtml = processedHtml.replace(/<strong>(.*?)<\/strong>/gi, '[bold]$1[/bold]');
-    processedHtml = processedHtml.replace(/<i>(.*?)<\/i>/gi, '[italic]$1[/italic]');
-    processedHtml = processedHtml.replace(/<em>(.*?)<\/em>/gi, '[italic]$1[/italic]');
-    processedHtml = processedHtml.replace(/<u>(.*?)<\/u>/gi, '[underline]$1[/underline]');
+    // 4. Finding tags, that has between them nothing
+    currentHtml = currentHtml.replace(/\[(bold|italic|underline)\]\s*\[\/\1\]/gi, '');
 
-    processedHtml = processedHtml.replace(/<div><br><\/div>/gi, '\n');
-    processedHtml = processedHtml.replace(/<div>(.*?)<\/div>/gi, '\n$1');
-    processedHtml = processedHtml.replace(/<p>(.*?)<\/p>/gi, '\n$1');
-    processedHtml = processedHtml.replace(/<br\s*[\/]?>/gi, '\n');
+    // 5. Moving and final clearing
+    currentHtml = currentHtml
+        .replace(/<div><br><\/div>/gi, '\n')
+        .replace(/<div>(.*?)<\/div>/gi, '\n$1')
+        .replace(/<p>(.*?)<\/p>/gi, '\n$1')
+        .replace(/<br\s*[\/]?>/gi, '\n');
 
-    processedHtml = processedHtml.replace(/\n\s*\n\s*\n/g, '\n\n');
+    // Deleting triple lines
+    currentHtml = currentHtml.replace(/\n\s*\n\s*\n/g, '\n\n');
 
     const finalDiv = document.createElement('div');
-    finalDiv.innerHTML = processedHtml;
+    finalDiv.innerHTML = currentHtml;
     return finalDiv.textContent.trim();
+  };
+
+  const parseSS14ToHTML = (rawText) => {
+    let html = rawText.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    html = html.replace(/\[bold\]([\s\S]*?)\[\/bold\]/gi, '<b>$1</b>');
+    html = html.replace(/\[italic\]([\s\S]*?)\[\/italic\]/gi, '<i>$1</i>');
+    html = html.replace(/\[underline\]([\s\S]*?)\[\/underline\]/gi, '<u>$1</u>');
+    html = html.replace(/\[color=(.*?)\]([\s\S]*?)\[\/color\]/gi, '<span style="color: $1;">$2</span>');
+    html = html.replace(/\[mono\]([\s\S]*?)\[\/mono\]/gi, '<span style="font-family: monospace;">$1</span>');
+    html = html.replace(/\[head=([1-3])\]([\s\S]*?)\[\/head\]/gi, '<h$1>$2</h$1>');
+
+    html = html.replace(/\[bullet\]([\s\S]*?)\[\/bullet\]/gi, '<li>$1</li>');
+    html = html.replace(/(<li>[\s\S]*?<\/li>(\s*<li>[\s\S]*?<\/li>)*)/gi, '<ul>$1</ul>');
+
+    html = html.replace(/\[\/?(bold|italic|underline|mono|bullet|color|head)[^\]]*\]/gi, '');
+
+    html = html.replace(/\n/g, '<br>');
+    html = html.replace(/<br>\s*<h/gi, '<h');
+    html = html.replace(/<\/h([1-3])>\s*<br>/gi, '</h$1>');
+    html = html.replace(/<br>\s*<ul/gi, '<ul');
+    html = html.replace(/<\/ul>\s*<br>/gi, '</ul>');
+
+    return html;
+  };
+
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const pastedText = (e.clipboardData || window.clipboardData).getData('text/plain');
+
+    const hasSS14Tags = /\[\/?(bold|italic|underline|color|mono|bullet|head)[^\]]*\]/i.test(pastedText);
+
+    if (hasSS14Tags) {
+      const formattedHTML = parseSS14ToHTML(pastedText);
+      document.execCommand('insertHTML', false, formattedHTML);
+    } else {
+      const plainHtml = pastedText
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/\n/g, '<br>');
+      document.execCommand('insertHTML', false, plainHtml);
+    }
+    saveContent();
+  };
+
+  // Custom import window
+  const handleImportSubmit = () => {
+    if (!importInput.trim()) {
+      setShowImportModal(false);
+      return;
+    }
+
+    const html = parseSS14ToHTML(importInput);
+
+    if (editorRef.current) {
+      editorRef.current.innerHTML = html;
+      saveContent();
+      showToast(t.importSuccess);
+    }
+
+    setShowImportModal(false);
+    setImportInput("");
+  };
+
+  const handleImportCancel = () => {
+    setShowImportModal(false);
+    setImportInput("");
   };
 
   const rgbToHex = (rgbString) => {
@@ -228,7 +309,7 @@ function App() {
   return (
       <div className="main-layout">
         <header className="app-header">
-          <a href="" className="header-left logo-link">
+          <a href="https://lomkaka1ff.github.io/SS14-Text-Editor/" className="header-left logo-link">
             <img src="https://spacestation14.com/images/main/icon.png" alt="SS14 Logo" className="app-logo" />
             <div className="brand-text">
               <span className="brand-company">PAPERWORK</span>
@@ -277,7 +358,10 @@ function App() {
               <option value="medical">{t.medical}</option>
             </select>
 
-            <button className="btn-copy" onClick={copyToClipboard}>{t.copyBtn}</button>
+            <div className="action-buttons">
+              <button className="btn-import" onClick={() => setShowImportModal(true)}>{t.importBtn}</button>
+              <button className="btn-copy" onClick={copyToClipboard}>{t.copyBtn}</button>
+            </div>
           </div>
 
           <div className="paper-container">
@@ -289,6 +373,7 @@ function App() {
                 onBlur={saveContent}
                 onMouseUp={handleSelectionChange}
                 onKeyUp={handleSelectionChange}
+                onPaste={handlePaste}
             ></div>
           </div>
         </div>
@@ -307,7 +392,6 @@ function App() {
 
         {toastMessage && (
             <div className="nt-toast">
-              <div className="nt-toast-icon">✓</div>
               <div className="nt-toast-text">{toastMessage}</div>
             </div>
         )}
@@ -318,6 +402,29 @@ function App() {
             For feedback write <b>komkalive</b> on Discord! Honk!
           </div>
         </div>
+
+        {showImportModal && (
+            <div className="nt-modal-overlay">
+              <div className="nt-modal">
+                <div className="nt-modal-header">{t.importTitle}</div>
+                <div className="nt-modal-body">
+                  <label>{t.importPrompt}</label>
+                  <textarea
+                      className="nt-modal-textarea"
+                      value={importInput}
+                      onChange={(e) => setImportInput(e.target.value)}
+                      placeholder="[head=1]CONFIDENTIAL[/head]&#10;[bold]Subject:[/bold]..."
+                      autoFocus
+                  />
+                </div>
+                <div className="nt-modal-footer">
+                  <button className="nt-modal-btn cancel" onClick={handleImportCancel}>{t.importCancel}</button>
+                  <button className="nt-modal-btn submit" onClick={handleImportSubmit}>{t.importSubmit}</button>
+                </div>
+              </div>
+            </div>
+        )}
+
       </div>
   );
 }
