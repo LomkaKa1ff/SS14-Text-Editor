@@ -191,7 +191,7 @@ function App() {
     // 3. Formating text
     currentHtml = currentHtml
         .replace(/<(b|strong)>(.*?)<\/\1>/gi, '[bold]$2[/bold]')
-        .replace(/<(i|em)>(.*?)<\/\2>/gi, '[italic]$2[/italic]')
+        .replace(/<(i|em)>(.*?)<\/\1>/gi, '[italic]$2[/italic]')
         .replace(/<u>(.*?)<\/u>/gi, '[underline]$1[/underline]');
 
     // 4. Finding tags, that has between them nothing
@@ -211,7 +211,7 @@ function App() {
     finalDiv.innerHTML = currentHtml;
     return finalDiv.textContent.trim();
   };
-  
+
   const parseSS14ToHTML = (rawText) => {
     let html = rawText.replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
@@ -309,7 +309,7 @@ function App() {
   return (
       <div className="main-layout">
         <header className="app-header">
-          <a href="/" className="header-left logo-link">
+          <a href="https://lomkaka1ff.github.io/SS14-Text-Editor/" className="header-left logo-link">
             <img src="https://spacestation14.com/images/main/icon.png" alt="SS14 Logo" className="app-logo" />
             <div className="brand-text">
               <span className="brand-company">PAPERWORK</span>
