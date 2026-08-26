@@ -367,7 +367,7 @@ function App() {
           <div className="paper-container">
             <div
                 ref={editorRef}
-                className="paper"
+                className="paper ym-hide-content ym-disable-keys"
                 contentEditable="true"
                 onInput={saveContent}
                 onBlur={saveContent}
