@@ -2,7 +2,19 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, useNavigate, useLocation, useSearchParams, useParams } from 'react-router-dom';
 import './App.css';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const API_URL = process.env.REACT_APP_API_URL || 'https://ss14-api.unitone.app';
+
+const fetchWithAuth = (url, options = {}) => {
+  const token = localStorage.getItem('auth_token');
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(options.headers || {}),
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return fetch(url, { ...options, headers });
+};
 
 const TRANSLATIONS = {
   ru: {
@@ -164,7 +176,7 @@ const TRANSLATIONS = {
 };
 
 function App() {
-  const [user, setUser] = useState(null); // null или { username: 'SpaceCadet_42' }
+  const [user, setUser] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
   const [showClown, setShowClown] = useState(false);
   const [charCount, setCharCount] = useState(0);
@@ -186,19 +198,29 @@ function App() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // Checking the session when loading a page
   useEffect(() => {
-    fetch(`${API_URL}/api/auth/me`, { credentials: 'include' })
+    const token = localStorage.getItem('auth_token');
+    const savedUsername = localStorage.getItem('username');
+    if (!token) return;
+
+    if (savedUsername) {
+      setUser({ username: savedUsername });
+    }
+
+    fetchWithAuth(`${API_URL}/api/auth/me`)
         .then(res => res.json())
         .then(data => {
-          if (data.authenticated) {
+          if (data.authenticated && data.user) {
             setUser(data.user);
+          } else if (!data.authenticated && !savedUsername) {
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('username');
+            setUser(null);
           }
         })
         .catch(err => console.error('Authorization check error:', err));
   }, []);
 
-  // Closing a drop-down menu when clicking outside its area
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
@@ -221,29 +243,19 @@ function App() {
     }
   };
 
-  // Redirect to login SS14
   const handleSS14Login = () => {
     window.location.href = `${API_URL}/api/auth/login`;
   };
 
-  // Logout function
   const handleLogout = () => {
     setShowUserMenu(false);
-    fetch(`${API_URL}/api/auth/logout`, {
-      method: 'POST',
-      credentials: 'include'
-    })
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            setUser(null);
-            showToast(t.logoutSuccess);
-            if (location.pathname === '/dashboard') {
-              navigate('/');
-            }
-          }
-        })
-        .catch(err => console.error('Error exiting:', err));
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('username');
+    setUser(null);
+    showToast(t.logoutSuccess);
+    if (location.pathname === '/dashboard') {
+      navigate('/');
+    }
   };
 
   useEffect(() => {
@@ -437,7 +449,7 @@ function EditorView({ t, lang, user, showToast, setCharCount }) {
 
   useEffect(() => {
     if (id) {
-      fetch(`${API_URL}/api/documents/${id}`, { credentials: 'include' })
+      fetchWithAuth(`${API_URL}/api/documents/${id}`)
           .then(res => {
             if (!res.ok) throw new Error();
             return res.json();
@@ -483,52 +495,31 @@ function EditorView({ t, lang, user, showToast, setCharCount }) {
     const contentHtml = editorRef.current ? editorRef.current.innerHTML : '';
 
     try {
-      if (id) {
-        const res = await fetch(`${API_URL}/api/documents`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            title: finalTitle,
-            content: contentHtml,
-            type: 'custom'
-          })
-        });
+      const res = await fetchWithAuth(`${API_URL}/api/documents`, {
+        method: 'POST',
+        body: JSON.stringify({
+          title: finalTitle,
+          content: contentHtml,
+          type: 'custom'
+        })
+      });
 
-        if (res.ok) {
-          const doc = await res.json();
-          localStorage.removeItem('ss14_paper_save');
-          setShowSaveModal(false);
-          showToast('Document was saved successfully!');
-          navigate(`/doc/${doc._id || doc.id}`);
-        } else {
-          const data = await res.json();
-          showToast(data.error || t.saveErrorToast || 'Error saving document', 'error');
-        }
+      let data = {};
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await res.json();
+      }
+
+      if (res.ok) {
+        localStorage.removeItem('ss14_paper_save');
+        setShowSaveModal(false);
+        showToast('Document was saved successfully!');
+        navigate(`/doc/${data._id || data.id}`);
       } else {
-        const res = await fetch(`${API_URL}/api/documents`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            title: finalTitle,
-            content: contentHtml,
-            type: 'custom'
-          })
-        });
-
-        if (res.ok) {
-          const doc = await res.json();
-          localStorage.removeItem('ss14_paper_save');
-          setShowSaveModal(false);
-          showToast('Document was saved successfully.!');
-          navigate(`/doc/${doc._id || doc.id}`);
-        } else {
-          const data = await res.json();
-          showToast(data.error || t.limitReachedToast || 'Failed to save document', 'error');
-        }
+        showToast(data.error || (res.status === 401 ? t.loginRequired : 'Failed to save document'), 'error');
       }
     } catch (err) {
+      console.error('Save document error:', err);
       showToast('Server connection error', 'error');
     }
   };
@@ -822,16 +813,13 @@ function DashboardView({ t, user, showToast }) {
   const [renameTitleInput, setRenameTitleInput] = useState('');
 
   const templates = [
-    { id: 'blank', name: t.empty, isPlus: true },
-    // { id: 'interrogation', name: t.interrogation, preview: t.tplInterrogationPreview },
-    // { id: 'medical', name: t.medical, preview: t.tplMedicalPreview },
-    // { id: 'cargo', name: t.cargo, preview: t.tplCargoPreview },
+    { id: 'blank', name: t.empty, isPlus: true }
   ];
 
-  // Загрузка документов из MongoDB
+  // Загрузка документов из MongoDB с токеном
   useEffect(() => {
     if (!user) return;
-    fetch(`${API_URL}/api/documents`, { credentials: 'include' })
+    fetchWithAuth(`${API_URL}/api/documents`)
         .then(res => res.json())
         .then(data => {
           if (Array.isArray(data)) setSavedDocs(data);
@@ -852,10 +840,8 @@ function DashboardView({ t, user, showToast }) {
     const finalTitle = renameTitleInput.trim() || 'Untitled Document';
 
     try {
-      const res = await fetch(`${API_URL}/api/documents/${docId}`, {
+      const res = await fetchWithAuth(`${API_URL}/api/documents/${docId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ title: finalTitle })
       });
 
@@ -872,7 +858,7 @@ function DashboardView({ t, user, showToast }) {
         if (showToast) showToast(t.renameErrorToast, 'error');
       }
     } catch (err) {
-      console.error('Ошибка переименования:', err);
+      console.error('Rename error:', err);
       if (showToast) showToast(t.serverErrorToast, 'error');
     } finally {
       setDocToRename(null);
@@ -889,9 +875,8 @@ function DashboardView({ t, user, showToast }) {
     const docId = docToDelete.id || docToDelete._id;
 
     try {
-      const res = await fetch(`${API_URL}/api/documents/${docId}`, {
-        method: 'DELETE',
-        credentials: 'include'
+      const res = await fetchWithAuth(`${API_URL}/api/documents/${docId}`, {
+        method: 'DELETE'
       });
       if (res.ok) {
         setSavedDocs(prev => prev.filter(doc => (doc.id || doc._id) !== docId));
@@ -900,7 +885,7 @@ function DashboardView({ t, user, showToast }) {
         if (showToast) showToast(t.deleteErrorToast, 'error');
       }
     } catch (err) {
-      console.error('Ошибка удаления:', err);
+      console.error('Deleting error:', err);
       if (showToast) showToast(t.serverErrorToast, 'error');
     } finally {
       setDocToDelete(null);
@@ -1103,33 +1088,32 @@ function DashboardView({ t, user, showToast }) {
 
 function AuthCallbackView({ t, showToast, setUser }) {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    const success = searchParams.get('success');
-    const error = searchParams.get('error');
+    const hash = window.location.hash;
+    const queryString = hash.includes('?') ? hash.split('?')[1] : '';
+    const params = new URLSearchParams(queryString || window.location.search);
 
-    if (success) {
-      fetch(`${API_URL}/api/auth/me`, { credentials: 'include' })
-          .then(res => res.json())
-          .then(data => {
-            if (data.authenticated) {
-              setUser(data.user);
-              showToast(t.authSuccessToast);
-            } else {
-              showToast(t.authErrorToast, 'error');
-            }
-            navigate('/');
-          })
-          .catch(() => {
-            showToast(t.serverErrorToast, 'error');
-            navigate('/');
-          });
+    const token = params.get('token');
+    const username = params.get('username');
+    const error = params.get('error');
+
+    if (token) {
+      localStorage.setItem('auth_token', token);
+      if (username) {
+        localStorage.setItem('username', username);
+        setUser({ username });
+      } else {
+        setUser({ username: 'User' });
+      }
+
+      showToast(t.authSuccessToast);
+      navigate('/dashboard', { replace: true });
     } else if (error) {
       showToast(t.ss14LoginErrorToast, 'error');
-      navigate('/');
+      navigate('/', { replace: true });
     }
-  }, [navigate, searchParams, setUser, showToast, t]);
+  }, [navigate, setUser, showToast, t]);
 
   return (
       <div style={{ padding: '2rem', color: '#fff', textAlign: 'center' }}>
