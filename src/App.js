@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, useNavigate, useLocation, useSearchParams, useParams } from 'react-router-dom';
 import './App.css';
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 const TRANSLATIONS = {
   ru: {
     placeholder: "Начни писать свой отчет здесь...",
@@ -184,9 +186,9 @@ function App() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // Проверка сессии при загрузке страницы
+  // Checking the session when loading a page
   useEffect(() => {
-    fetch('http://localhost:5000/api/auth/me', { credentials: 'include' })
+    fetch(`${API_URL}/api/auth/me`, { credentials: 'include' })
         .then(res => res.json())
         .then(data => {
           if (data.authenticated) {
@@ -196,7 +198,7 @@ function App() {
         .catch(err => console.error('Authorization check error:', err));
   }, []);
 
-  // Закрытие выпадающего меню при клике вне его области
+  // Closing a drop-down menu when clicking outside its area
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
@@ -219,15 +221,15 @@ function App() {
     }
   };
 
-  // Редирект на логин SS14
+  // Redirect to login SS14
   const handleSS14Login = () => {
-    window.location.href = 'http://localhost:5000/api/auth/login';
+    window.location.href = `${API_URL}/api/auth/login`;
   };
 
-  // Функция выхода из аккаунта
+  // Logout function
   const handleLogout = () => {
     setShowUserMenu(false);
-    fetch('http://localhost:5000/api/auth/logout', {
+    fetch(`${API_URL}/api/auth/logout`, {
       method: 'POST',
       credentials: 'include'
     })
@@ -414,7 +416,6 @@ function EditorView({ t, lang, user, showToast, setCharCount }) {
   const [currentFormat, setCurrentFormat] = useState('p');
   const [docTitle, setDocTitle] = useState('Untitled Document');
 
-  // Окна импорта и сохранения
   const [showImportModal, setShowImportModal] = useState(false);
   const [importInput, setImportInput] = useState("");
 
@@ -427,7 +428,6 @@ function EditorView({ t, lang, user, showToast, setCharCount }) {
     }
   };
 
-  // Текст сохраняется ТОЛЬКО в localstorage для защиты от сбоев/вылетов браузера
   const saveContentLocally = () => {
     if (!editorRef.current) return;
     const html = editorRef.current.innerHTML;
@@ -435,10 +435,9 @@ function EditorView({ t, lang, user, showToast, setCharCount }) {
     localStorage.setItem(id ? `ss14_paper_draft_${id}` : 'ss14_paper_save', html);
   };
 
-  // Загрузка документа при первом рендере
   useEffect(() => {
     if (id) {
-      fetch(`http://localhost:5000/api/documents/${id}`, { credentials: 'include' })
+      fetch(`${API_URL}/api/documents/${id}`, { credentials: 'include' })
           .then(res => {
             if (!res.ok) throw new Error();
             return res.json();
@@ -470,7 +469,6 @@ function EditorView({ t, lang, user, showToast, setCharCount }) {
     }
   }, [id, lang, location.state, t.placeholder]);
 
-  // Нажатие на кнопку 💾 СОХРАНИТЬ в тулбаре
   const handleSaveButtonClick = () => {
     if (!user) {
       showToast(t.loginRequired, 'error');
@@ -480,15 +478,13 @@ function EditorView({ t, lang, user, showToast, setCharCount }) {
     setShowSaveModal(true);
   };
 
-  // Подтверждение сохранения в модальном окне
   const handleSaveModalSubmit = async () => {
     const finalTitle = saveTitleInput.trim() || 'Untitled Document';
     const contentHtml = editorRef.current ? editorRef.current.innerHTML : '';
 
     try {
       if (id) {
-        // Обновление существующего документа в базе
-        const res = await fetch('http://localhost:5000/api/documents', {
+        const res = await fetch(`${API_URL}/api/documents`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -507,12 +503,10 @@ function EditorView({ t, lang, user, showToast, setCharCount }) {
           navigate(`/doc/${doc._id || doc.id}`);
         } else {
           const data = await res.json();
-          // Показываем конкретную ошибку от бэкенда, если превышен лимит
           showToast(data.error || t.saveErrorToast || 'Error saving document', 'error');
         }
       } else {
-        // Создание нового документа в базе
-        const res = await fetch('http://localhost:5000/api/documents', {
+        const res = await fetch(`${API_URL}/api/documents`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -824,7 +818,6 @@ function DashboardView({ t, user, showToast }) {
   const [loading, setLoading] = useState(true);
   const [docToDelete, setDocToDelete] = useState(null);
 
-  // Состояния для переименования
   const [docToRename, setDocToRename] = useState(null);
   const [renameTitleInput, setRenameTitleInput] = useState('');
 
@@ -838,7 +831,7 @@ function DashboardView({ t, user, showToast }) {
   // Загрузка документов из MongoDB
   useEffect(() => {
     if (!user) return;
-    fetch('http://localhost:5000/api/documents', { credentials: 'include' })
+    fetch(`${API_URL}/api/documents`, { credentials: 'include' })
         .then(res => res.json())
         .then(data => {
           if (Array.isArray(data)) setSavedDocs(data);
@@ -847,21 +840,19 @@ function DashboardView({ t, user, showToast }) {
         .catch(err => console.error(err));
   }, [user]);
 
-  // Открытие модального окна переименования
   const handleOpenRenameModal = (e, doc) => {
     e.stopPropagation();
     setDocToRename(doc);
     setRenameTitleInput(doc.title || '');
   };
 
-  // Подтверждение переименования через API
   const handleConfirmRename = async () => {
     if (!docToRename) return;
     const docId = docToRename.id || docToRename._id;
     const finalTitle = renameTitleInput.trim() || 'Untitled Document';
 
     try {
-      const res = await fetch(`http://localhost:5000/api/documents/${docId}`, {
+      const res = await fetch(`${API_URL}/api/documents/${docId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -888,19 +879,17 @@ function DashboardView({ t, user, showToast }) {
     }
   };
 
-  // Открытие модального окна удаления
   const handleOpenDeleteModal = (e, doc) => {
     e.stopPropagation();
     setDocToDelete(doc);
   };
 
-  // Подтверждение удаления документа через API
   const handleConfirmDelete = async () => {
     if (!docToDelete) return;
     const docId = docToDelete.id || docToDelete._id;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/documents/${docId}`, {
+      const res = await fetch(`${API_URL}/api/documents/${docId}`, {
         method: 'DELETE',
         credentials: 'include'
       });
@@ -1112,7 +1101,6 @@ function DashboardView({ t, user, showToast }) {
   );
 }
 
-// Компонент обработки редиректа после OAuth SS14
 function AuthCallbackView({ t, showToast, setUser }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -1122,7 +1110,7 @@ function AuthCallbackView({ t, showToast, setUser }) {
     const error = searchParams.get('error');
 
     if (success) {
-      fetch('http://localhost:5000/api/auth/me', { credentials: 'include' })
+      fetch(`${API_URL}/api/auth/me`, { credentials: 'include' })
           .then(res => res.json())
           .then(data => {
             if (data.authenticated) {
