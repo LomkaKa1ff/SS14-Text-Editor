@@ -1088,3 +1088,9 @@ button:hover, select:hover, .color-picker-wrapper:hover {
   display: flex;
   justify-content: flex-end;
 }
+
+.footer-socials {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}

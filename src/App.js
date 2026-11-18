@@ -364,6 +364,28 @@ function App() {
                 </svg>
                 <span>GITHUB</span>
               </a>
+
+              <a
+                  href="https://github.com/lomkaka1ff/SS14-Text-Editor/issues"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="social-btn"
+              >
+                <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                >
+                  <path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l2-4a8.5 8.5 0 1 1 15-4.5Z" />
+                </svg>
+                <span>Issues &amp; Feedback</span>
+              </a>
             </div>
 
             <div className="footer-policies">
