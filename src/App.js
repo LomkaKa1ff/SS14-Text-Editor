@@ -278,7 +278,7 @@ function App() {
               className="header-left logo-link"
               style={{ cursor: 'pointer' }}
           >
-            <img src="https://spacestation14.com/images/main/icon.png" alt="SS14 Logo" className="app-logo" />
+            <img src="/SS14-Text-Editor/ss14-text-editor-logo.png" alt="SS14 Logo" className="app-logo" />
             <div className="brand-text">
               <span className="brand-company">PAPERWORK</span>
               <span className="brand-product">TEXT EDITOR</span>
@@ -293,6 +293,7 @@ function App() {
             <button
                 className={`btn-header ${location.pathname === '/dashboard' ? 'active' : ''}`}
                 onClick={handleFolderClick}
+                title={t.myDocs}
                 title={t.myDocs}
             >
               📁 {t.myDocs}
