@@ -93,7 +93,7 @@ const TRANSLATIONS = {
     renameModalSubmit: "СОХРАНИТЬ",
     renameSuccessToast: "Название документа успешно обновлено!",
     renameErrorToast: "Ошибка при переименовании документа",
-    limitReachedToast: "Достигнут лимит (максимум 50 документов)!",
+    limitReachedToast: "Достигнут лимит (максимум 100 документов)!",
   },
   en: {
     placeholder: "Start writing your report here...",
@@ -171,7 +171,7 @@ const TRANSLATIONS = {
     renameModalSubmit: "SAVE",
     renameSuccessToast: "Document title successfully updated!",
     renameErrorToast: "Error renaming document",
-    limitReachedToast: "Document limit reached (max 50 documents)!",
+    limitReachedToast: "Document limit reached (max 100 documents)!",
   }
 };
 
@@ -985,8 +985,8 @@ function DashboardView({ t, user, showToast }) {
         <section className="dash-section">
           <div className="dash-section-header">
             <span className="dash-title">{t.savedDocsHeader}</span>
-            <span className={`dash-count ${savedDocs.length >= 50 ? 'limit-reached' : ''}`}>
-              {savedDocs.length} / 50 {t.docCountUnit}
+            <span className={`dash-count ${savedDocs.length >= 100 ? 'limit-reached' : ''}`}>
+              {savedDocs.length} / 100 {t.docCountUnit}
             </span>
           </div>
 
